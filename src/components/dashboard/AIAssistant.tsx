@@ -1,186 +1,288 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, Sparkles, User, Bot } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
-import type { AIMessage } from '../../types';
+import { useState, useRef, useEffect, MouseEvent, KeyboardEvent } from "react";
+import { toast } from "react-toastify";
+import { BotMessageSquare, X, ArrowUp, Loader, Spline } from "lucide-react";
+import { motion } from "framer-motion";
+import "react-toastify/dist/ReactToastify.css";
 
-export function AIAssistant() {
-  const { aiMessages, setAiMessages, tasks, setTasks } = useApp();
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+const apikey = "AIzaSyBPuUC9dW_uIqC8q9wsSE1zKjgUJR62XxE";
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+type MessageType = "user" | "ai";
+interface Message {
+  type: MessageType;
+  text: string;
+  time: string;
+}
+
+interface Dimensions {
+  width: number;
+  height: number;
+}
+
+// Variants for the chat panel
+const panelVariants = {
+  hidden: { opacity: 0, scale: 0.95, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 30 },
+  },
+};
+
+// Variants for each chat message
+const messageVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.1 },
+  }),
+};
+
+const AIAssistant = () => {
+  const [question, setQuestion] = useState<string>("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [dimensions, setDimensions] = useState<Dimensions>({ width: 350, height: 500 });
+  const resizing = useRef<boolean>(false);
+  const startPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const startDimensions = useRef<Dimensions>({ width: 350, height: 500 });
 
   useEffect(() => {
-    scrollToBottom();
-  }, [aiMessages]);
-
-  const simulateAIResponse = async (userMessage: string): Promise<string> => {
-    // Simple AI simulation for demo purposes
-    if (userMessage.toLowerCase().includes('task') || userMessage.toLowerCase().includes('assignment')) {
-      return "I can help you create a task! Try saying something like 'Add assignment due Friday' or 'Create task for studying math'. I can also suggest the best times to work on your tasks based on your calendar.";
-    }
-    
-    if (userMessage.toLowerCase().includes('schedule') || userMessage.toLowerCase().includes('calendar')) {
-      return "Based on your current schedule, you have some free time tomorrow afternoon. Would you like me to suggest when to work on your pending assignments?";
-    }
-    
-    if (userMessage.toLowerCase().includes('expense') || userMessage.toLowerCase().includes('money')) {
-      return "I notice you've spent $105.99 this month. Your biggest expense category is books ($89.99). Would you like some tips on managing your student budget?";
-    }
-    
-    return "I'm here to help you manage your tasks, schedule, and expenses! Try asking me to create a task, check your schedule, or analyze your spending patterns.";
-  };
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMessage: AIMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input.trim(),
-      timestamp: new Date(),
+    const modalEl = document.getElementById("my_modal_1") as HTMLDivElement & {
+      showModal?: () => void;
+      close?: () => void;
     };
-
-    setAiMessages([...aiMessages, userMessage]);
-    setInput('');
-    setIsTyping(true);
-
-    // Simulate AI thinking time
-    setTimeout(async () => {
-      const response = await simulateAIResponse(input);
-      const aiResponse: AIMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
+    if (modalEl) {
+      modalEl.showModal = () => setIsChatOpen(true);
+      modalEl.close = () => {
+        setIsChatOpen(false);
+        setMessages([]);
       };
-      
-      setAiMessages(prev => [...prev, aiResponse]);
-      setIsTyping(false);
-    }, 1500);
-  };
+    }
+  }, []);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const generateQuestion = async () => {
+    if (!question.trim()) {
+      toast.error("Please enter a question");
+      return;
+    }
+
+    setLoading(true);
+    const currentTime = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const userMessage: Message = { type: "user", text: question, time: currentTime };
+    setMessages((prev) => [...prev, userMessage]);
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apikey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: question }],
+              },
+            ],
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data && data.candidates && data.candidates.length > 0) {
+        const generatedResponse =
+          data.candidates[0]?.content?.parts[0]?.text || "No response found";
+        const aiMessage: Message = {
+          type: "ai",
+          text: generatedResponse,
+          time: currentTime,
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+        toast.success("Response generated successfully!");
+      } else {
+        toast.error("No response from AI model");
+      }
+    } catch (error) {
+      console.error("Error generating response:", error);
+      toast.error("Failed to generate response");
+    } finally {
+      setLoading(false);
+      setQuestion("");
     }
   };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !loading) {
+      generateQuestion();
+    }
+  };
+
+  const closeModal = () => {
+    setMessages([]);
+    setIsChatOpen(false);
+  };
+
+  // --- Resizable functionality from the top-left corner ---
+  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    resizing.current = true;
+    startPos.current = { x: e.clientX, y: e.clientY };
+    startDimensions.current = { ...dimensions };
+    document.addEventListener("mousemove", handleMouseMove as EventListener);
+    document.addEventListener("mouseup", handleMouseUp as EventListener);
+  };
+
+  const handleMouseMove = (e: MouseEvent | globalThis.MouseEvent) => {
+    if (!resizing.current) return;
+    const deltaX = (e as MouseEvent).clientX - startPos.current.x;
+    const deltaY = (e as MouseEvent).clientY - startPos.current.y;
+    const newWidth = Math.min(
+      Math.max(startDimensions.current.width - deltaX, 300),
+      window.innerWidth * 0.96
+    );
+    const newHeight = Math.min(
+      Math.max(startDimensions.current.height - deltaY, 400),
+      window.innerHeight * 0.94
+    );
+    setDimensions({ width: newWidth, height: newHeight });
+  };
+
+  const handleMouseUp = () => {
+    resizing.current = false;
+    document.removeEventListener("mousemove", handleMouseMove as EventListener);
+    document.removeEventListener("mouseup", handleMouseUp as EventListener);
+  };
+  // --- End resizable functionality ---
 
   return (
-    <Card className="p-6 flex flex-col h-96">
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
-          <Sparkles className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            AI Assistant
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Your smart productivity companion
-          </p>
-        </div>
-      </div>
+    <div id="manishai">
+      {/* Ask AI Button */}
+      <button
+        className="flex bg-purple-800 text-white rounded-xl gap-3 btn shadow-[0_4px_100px_rgba(176,71,255,0.7)] px-5 py-2.5 font-semibold transition duration-200 transform hover:scale-105 ml-9 hover:shadow-[0_4px_100px_rgba(176,71,255,1)]"
+        onClick={() => {
+          const modalEl = document.getElementById("my_modal_1") as HTMLDivElement & {
+            showModal?: () => void;
+          };
+          modalEl && modalEl.showModal && modalEl.showModal();
+        }}
+      >
+        <BotMessageSquare />
+        Ask AI
+      </button>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-        {aiMessages.length === 0 && (
-          <div className="text-center py-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Hi! I'm your AI assistant. Ask me about tasks, schedules, or expenses!
-            </p>
-          </div>
-        )}
-
-        <AnimatePresence>
-          {aiMessages.map((message) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`flex space-x-2 max-w-[80%] ${
-                message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-              }`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  message.role === 'user'
-                    ? 'bg-blue-100 dark:bg-blue-900/30'
-                    : 'bg-gradient-to-br from-purple-500 to-pink-500'
-                }`}>
-                  {message.role === 'user' ? (
-                    <User className="w-4 h-4 text-blue-600" />
-                  ) : (
-                    <Bot className="w-4 h-4 text-white" />
-                  )}
-                </div>
-                
-                <div className={`px-3 py-2 rounded-lg text-sm ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                }`}>
-                  {message.content}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {isTyping && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex justify-start"
+      {/* Chat Panel */}
+      <motion.div
+        id="my_modal_1"
+        variants={panelVariants}
+        initial="hidden"
+        animate={isChatOpen ? "visible" : "hidden"}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          zIndex: 50,
+          pointerEvents: isChatOpen ? "auto" : "none",
+          width: dimensions.width,
+          height: dimensions.height,
+        }}
+      >
+        <div className="bg-white dark:bg-gray-900 text-black dark:text-gray-400 rounded-3xl w-full h-full txt flex flex-col overflow-hidden relative shadow-2xl shadow-purple-800/50 z-50">
+          {/* Resizer handle using the Spline icon */}
+          <div
+            onMouseDown={handleMouseDown}
+            className="absolute top-0 left-0 p-2 cursor-nw-resize z-50"
           >
-            <div className="flex space-x-2 max-w-[80%]">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
+            <Spline className="w-5 h-5 txt-dim" />
+          </div>
+
+          {/* Nav-bar */}
+          <div
+            className="flex text-black dark:text-gray-400 justify-between items-center px-2 py-0.5 border-b"
+            style={{ borderColor: "var(--bg-sec)" }}
+          >
+            <h3 className="text-lg txt-dim font-semibold pl-8">Ask AI</h3>
+            <button
+              onClick={closeModal}
+              className="hover:txt transition p-2 txt-dim"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Chat area */}
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 text-black dark:text-white">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                <p className="text-lg font-medium text-center">
+                  Hey! Welcome to{" "}
+                  <span style={{ color: "var(--btn)" }}>StudentFlow AI</span>
+                  <br />
+                  How can I help you today?
+                </p>
               </div>
-              <div className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </div>
+            ) : (
+              messages.map((msg, index) => (
+                <motion.div
+                  key={index}
+                  custom={index}
+                  variants={messageVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className={`flex flex-col ${
+                    msg.type === "user" ? "items-end" : "items-start"
+                  }`}
+                >
+                  <p
+                    className={`py-2 px-4 rounded-lg ${
+                      msg.type === "user" ? "bg-sec txt" : "bg-transparent txt"
+                    }`}
+                  >
+                    {msg.text}
+                  </p>
+                  <span className="text-sm txt-dim mt-1">{msg.time}</span>
+                </motion.div>
+              ))
+            )}
+          </div>
+
+          {/* Input area */}
+          <div
+            className="p-1 border rounded-full flex text-black dark:text-gray-500"
+            style={{ borderColor: "var(--bg-sec)" }}
+          >
+            <div className="flex-1">
+              <input
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask StudyFlow AI..."
+                className="w-full text-black dark:text-white p-3 rounded-full outline-none bg-transparent focus:ring-2 focus:ring-transparent"
+              />
             </div>
-          </motion.div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input */}
-      <div className="flex space-x-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Ask me anything..."
-          className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:bg-white dark:focus:bg-gray-700 transition-all duration-200"
-        />
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleSend}
-          disabled={!input.trim() || isTyping}
-        >
-          <Send className="w-4 h-4" />
-        </Button>
-      </div>
-    </Card>
+            <button
+              onClick={generateQuestion}
+              className={`txt font-bold p-3 rounded-full transition-all shadow-[0_4px_20px_rgba(176,71,255,0.3)] hover:shadow-[0_4px_70px_rgba(176,71,255,0.4)] ${
+                loading
+                  ? "bg-sec cursor-not-allowed"
+                  : "btn hover:bg-[var(--btn-hover)]"
+              }`}
+              disabled={loading}
+            >
+              {loading ? <Loader className="animate-spin" /> : <ArrowUp />}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
   );
-}
+};
+
+export default AIAssistant;

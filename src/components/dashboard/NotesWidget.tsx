@@ -102,7 +102,7 @@ export function NotesWidget() {
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-black dark:text-white">
                 <input
                   type="text"
                   placeholder="Note title"
@@ -125,7 +125,7 @@ export function NotesWidget() {
                 placeholder="Note content"
                 value={newNote.content}
                 onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
                 rows={4}
                 required
               />
@@ -135,7 +135,7 @@ export function NotesWidget() {
                 placeholder="Tags (comma separated)"
                 value={newNote.tags}
                 onChange={(e) => setNewNote(prev => ({ ...prev, tags: e.target.value }))}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
               
               <div className="flex space-x-2">

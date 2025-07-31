@@ -5,6 +5,8 @@ const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 
+const EventRoutes = require("./Routes/events.js");
+
 // Load env vars
 require('dotenv').config();
 
@@ -36,7 +38,7 @@ app.use(express.urlencoded({ extended: false }));
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tasks', require('./routes/tasks'));
-app.use('/api/events', require('./routes/events'));
+app.use("/api/events", EventRoutes);
 app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/notes', require('./routes/notes'));
 

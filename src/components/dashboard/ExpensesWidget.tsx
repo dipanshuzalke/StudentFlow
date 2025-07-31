@@ -119,7 +119,7 @@ export function ExpensesWidget() {
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-black dark:text-white">
                 <input
                   type="text"
                   placeholder="Expense title"
@@ -142,7 +142,7 @@ export function ExpensesWidget() {
               <select
                 value={newExpense.category}
                 onChange={(e) => setNewExpense(prev => ({ ...prev, category: e.target.value as any }))}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2  text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="food">Food</option>
                 <option value="travel">Travel</option>
@@ -154,7 +154,7 @@ export function ExpensesWidget() {
                 placeholder="Description (optional)"
                 value={newExpense.description}
                 onChange={(e) => setNewExpense(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2  text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                 rows={2}
               />
               

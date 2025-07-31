@@ -60,7 +60,7 @@ export function Navbar() {
             >
               <span className="text-white font-bold text-sm">SF</span>
             </motion.div>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white" onClick={() => navigate('/')}>
               StudentFlow
             </h1>
           </div>
