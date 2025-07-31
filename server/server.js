@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 
-const EventRoutes = require("./Routes/events.js");
+const EventRoutes = require("./routes/events.js");
 
 // Load env vars
 require('dotenv').config();
