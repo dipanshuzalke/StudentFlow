@@ -6,7 +6,7 @@ const {
     updateEvent,
     deleteEvent,
     getEventByDate
-} = require("../controller/eventController.js");
+} = require("../controller/eventController");
 
 const router = express.Router();
 
