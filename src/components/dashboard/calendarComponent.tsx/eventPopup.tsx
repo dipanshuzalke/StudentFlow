@@ -28,7 +28,7 @@ const EventPopup = ({ date, onClose, refreshEvents }: EventPopupProps) => {
     const fetchEvent = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/events-by-date?date=${date}`
+          `https://studentflow-1-wu8y.onrender.com/api/events-by-date?date=${date}`
         );
         const eventData: EventData | undefined = response.data.data[0]; // Assuming one event per date
         if (eventData) {
@@ -53,9 +53,9 @@ const EventPopup = ({ date, onClose, refreshEvents }: EventPopupProps) => {
     try {
       const eventData = { title, time, date };
       if (id) {
-        await axios.put(`http://localhost:5000/api/events/${id}`, eventData);
+        await axios.put(`https://studentflow-1-wu8y.onrender.com/api/events/${id}`, eventData);
       } else {
-        await axios.post(`http://localhost:5000/api/events`, eventData);
+        await axios.post(`https://studentflow-1-wu8y.onrender.com/api/events`, eventData);
       }
       refreshEvents();
       onClose();
@@ -67,7 +67,7 @@ const EventPopup = ({ date, onClose, refreshEvents }: EventPopupProps) => {
   const handleDelete = async () => {
     try {
       if (id) {
-        await axios.delete(`http://localhost:5000/api/events/${id}`);
+        await axios.delete(`https://studentflow-1-wu8y.onrender.com/api/events/${id}`);
         refreshEvents();
         onClose();
       }

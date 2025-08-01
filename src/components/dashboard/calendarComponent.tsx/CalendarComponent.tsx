@@ -44,7 +44,7 @@ function Calendar(): JSX.Element {
 
   const fetchEvents = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/events`);
+      const response = await axios.get(`https://studentflow-1-wu8y.onrender.com/api/events`);
       if (response.data.success) {
         setEvents(response.data.data);
 
