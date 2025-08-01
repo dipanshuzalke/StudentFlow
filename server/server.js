@@ -27,8 +27,8 @@ app.use(limiter);
 
 // CORS
 app.use(cors({
-  origin: 'http://localhost:5173', // your frontend origin
-  credentials: true // if you use cookies or authentication
+  origin: ['http://localhost:5173', 'https://student-flow-blush.vercel.app'],
+  credentials: true
 }));
 
 // Body parser
